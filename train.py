@@ -66,7 +66,8 @@ class Train:
         else:
             raise NotImplementedError
 
-        self.imdb, self.roidb = combined_roidb("voc_2007_trainval")
+        #self.imdb, self.roidb = combined_roidb("voc_2007_trainval")
+        self.imdb, self.roidb = combined_roidb("voc_1988_train")
 
         self.data_layer = RoIDataLayer(self.roidb, self.imdb.num_classes)
         self.output_dir = cfg.get_output_dir(self.imdb, 'default')
@@ -74,10 +75,13 @@ class Train:
 
     def train(self):
 
+
         # Create session
         tfconfig = tf.ConfigProto(allow_soft_placement=True)
         tfconfig.gpu_options.allow_growth = True
         sess = tf.Session(config=tfconfig)
+
+        summary_writer = tf.summary.FileWriter('./tmp/FasterRCNN', sess.graph)
 
         with sess.graph.as_default():
 
@@ -148,15 +152,19 @@ class Train:
             blobs = self.data_layer.forward()
 
             # Compute the graph without summary
-            rpn_loss_cls, rpn_loss_box, loss_cls, loss_box, total_loss = self.net.train_step(sess, blobs, train_op)
+            rpn_loss_cls, rpn_loss_box, loss_cls, loss_box, total_loss, totallosssum = self.net.train_step(sess, blobs, train_op)
             timer.toc()
             iter += 1
+
+            summary_writer.add_summary(totallosssum, iter)
 
             # Display training information
             if iter % (cfg.FLAGS.display) == 0:
                 print('iter: %d / %d, total loss: %.6f\n >>> rpn_loss_cls: %.6f\n '
                       '>>> rpn_loss_box: %.6f\n >>> loss_cls: %.6f\n >>> loss_box: %.6f\n ' % \
                       (iter, cfg.FLAGS.max_iters, total_loss, rpn_loss_cls, rpn_loss_box, loss_cls, loss_box))
+
+
                 print('speed: {:.3f}s / iter'.format(timer.average_time))
 
             if iter % cfg.FLAGS.snapshot_iterations == 0:

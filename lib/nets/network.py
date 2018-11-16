@@ -254,6 +254,8 @@ class Network(object):
             loss = cross_entropy + loss_box + rpn_cross_entropy + rpn_loss_box
             self._losses['total_loss'] = loss
 
+            self.TotallossSumm = tf.summary.scalar('TotalLoss', loss)
+
             self._event_summaries.update(self._losses)
 
         return loss
@@ -361,14 +363,16 @@ class Network(object):
     def train_step(self, sess, blobs, train_op):
         feed_dict = {self._image: blobs['data'], self._im_info: blobs['im_info'],
                      self._gt_boxes: blobs['gt_boxes']}
-        rpn_loss_cls, rpn_loss_box, loss_cls, loss_box, loss, _ = sess.run([self._losses["rpn_cross_entropy"],
+
+        rpn_loss_cls, rpn_loss_box, loss_cls, loss_box, loss, totallosssum, _ = sess.run([self._losses["rpn_cross_entropy"],
                                                                             self._losses['rpn_loss_box'],
                                                                             self._losses['cross_entropy'],
                                                                             self._losses['loss_box'],
                                                                             self._losses['total_loss'],
+                                                                            self.TotallossSumm,
                                                                             train_op],
                                                                            feed_dict=feed_dict)
-        return rpn_loss_cls, rpn_loss_box, loss_cls, loss_box, loss
+        return rpn_loss_cls, rpn_loss_box, loss_cls, loss_box, loss, totallosssum
 
     def train_step_with_summary(self, sess, blobs, train_op):
         feed_dict = {self._image: blobs['data'], self._im_info: blobs['im_info'],

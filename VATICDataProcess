@@ -1,0 +1,149 @@
+import cv2
+import glob
+import xml.etree.ElementTree as ET
+import os
+import shutil
+
+from lxml.etree import Element, SubElement, tostring
+from xml.dom.minidom import parseString
+
+def make_xml(boundingboxlist, File_name, W, H):
+
+    node_root = Element('annotation')
+
+    node_folder = SubElement(node_root, 'folder')
+    node_folder.text = 'VOC1988'
+    node_filename = SubElement(node_root, 'filename')
+    node_filename.text = File_name + '.png'
+
+    node_Source = SubElement(node_root, 'source')
+    node_database = SubElement(node_Source, 'database')
+    node_database.text = 'Unknown'
+
+    node_size = SubElement(node_root, 'size')
+    node_width = SubElement(node_size, 'width')
+    node_width.text = str(W)
+    node_height = SubElement(node_size, 'height')
+    node_height.text = str(H)
+    node_depth = SubElement(node_size, 'depth')
+    node_depth.text = '3'
+
+    node_segmented = SubElement(node_root, 'segmented')
+    node_segmented.text = '0'
+
+    for i in range(len(boundingboxlist)):
+        node_object = SubElement(node_root, 'object')
+        node_name = SubElement(node_object, 'name')
+        node_name.text = boundingboxlist[i]['class']
+
+        node_pose = SubElement(node_object, 'pose')
+        node_pose.text = 'Unspecified'
+
+        node_truncated = SubElement(node_object, 'truncated')
+        node_truncated.text = '0'
+
+        node_difficult = SubElement(node_object, 'difficult')
+        node_difficult.text = '0'
+
+        node_bndbox = SubElement(node_object, 'bndbox')
+        node_xmin = SubElement(node_bndbox, 'xmin')
+        node_xmin.text = str(boundingboxlist[i]['xmin'])
+        node_ymin = SubElement(node_bndbox, 'ymin')
+        node_ymin.text = str(boundingboxlist[i]['ymin'])
+        node_xmax = SubElement(node_bndbox, 'xmax')
+        node_xmax.text = str(boundingboxlist[i]['xmax'])
+        node_ymax = SubElement(node_bndbox, 'ymax')
+        node_ymax.text = str(boundingboxlist[i]['ymax'])
+
+    xml = tostring(node_root, pretty_print=True)
+    dom = parseString(xml)
+    # print xml 打印查看结果
+    return xml
+
+
+_MainName = 'VOCdevkit1988/'
+
+RootPath = "./data/" + _MainName + "VOC1988_RealData/"
+_MainDir = RootPath + 'VATICData'
+
+listdir = os.listdir(_MainDir)
+
+
+
+IDTransform = {'琴酒':'gin', '伏特加' : 'vodka', '白蘭地':'brandy', '蘭姆酒': 'rum', '威士忌':'daniels', '龍舌蘭':'agave'}
+
+FinalImageIndex = 0
+ALLXml = []
+for listDir_Temp in listdir:
+
+    PathList = os.path.join(_MainDir, listDir_Temp)
+    if os.path.isdir(PathList) == 0:
+        break
+    Imagegroup = glob.glob(PathList + '/*.jpg')
+
+
+    XmlFile = PathList + '.xml'
+
+    DataIndex = 0
+
+    doc = ET.parse(XmlFile)
+
+    for i in range(len(Imagegroup)):
+
+        Filepath = os.path.join(PathList, str(i) ) + '.jpg'
+        TargetPath = os.path.join(RootPath, "JPEGImages")
+
+        FileName = 'Real_' + str(FinalImageIndex)
+        ALLXml.append(FileName)
+        TargetPath = TargetPath + '/' + FileName + '.jpg'
+
+        shutil.copy2(Filepath, TargetPath)
+        root = doc.getroot()
+
+
+        ObjectList = doc.findall('object')
+
+        img = cv2.imread(TargetPath)
+        height, width, channels = img.shape
+
+        TargetData = []
+
+        for Object in ObjectList:
+            ID = Object.find('id').text
+            FrameList = Object.findall('polygon')
+            for FrameIndex in FrameList:
+                ImageName = os.path.basename(Filepath)
+                ImageIndex = ImageName.split('.')
+                if FrameIndex[0].text == ImageIndex[0]:
+                    DataPoint = FrameIndex.findall('pt')
+                    TargetData.append({'xmin' : DataPoint[0][0].text, 'ymin' : DataPoint[0][1].text, 'xmax' : DataPoint[2][0].text, 'ymax' : DataPoint[2][1].text, 'class' : IDTransform[ID]})
+                    break
+
+        dom = make_xml(TargetData, FileName, width, height)
+
+        xml_name = os.path.join(RootPath + "Annotations", FileName + '.xml')
+        with open(xml_name, "wb") as outfile:
+            outfile.write(dom)
+
+        DataIndex = DataIndex +1
+        FinalImageIndex = FinalImageIndex + 1
+
+
+_ImageSets = RootPath + "ImageSets/"
+if not os.path.exists(_ImageSets):
+    os.makedirs(_ImageSets)
+
+_main = _ImageSets + "Main/"
+if not os.path.exists(_main):
+    os.makedirs(_main)
+#
+# file = open(_main + "train.txt", "w")
+# for i in TrainList:
+#     file.write(i + "\n")
+# file.close()
+
+file = open(_main + "test.txt", "w")
+for i in ALLXml:
+    file.write(i + "\n")
+file.close()
+

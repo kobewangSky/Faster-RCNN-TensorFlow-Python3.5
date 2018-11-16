@@ -12,7 +12,12 @@ ext_modules = [
         sources=['../common/maskApi.c', 'pycocotools/_mask.pyx'],
         include_dirs = [np.get_include(), '../common'],
         extra_compile_args=[],
-    )
+    ),
+    Extension(
+        'lib.utils.cython_bbox',
+        sources=['../../../lib/utils/bbox.c','../../../lib/utils/bbox.pyx'],
+        include_dirs = [np.get_include(), '/lib/utils'],
+        extra_compile_args=[], )
 ]
 
 setup(name='pycocotools',

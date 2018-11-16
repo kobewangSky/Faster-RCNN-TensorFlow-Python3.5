@@ -27,8 +27,8 @@ tf.app.flags.DEFINE_float('momentum', 0.9, "Momentum")
 tf.app.flags.DEFINE_float('gamma', 0.1, "Factor for reducing the learning rate")
 
 tf.app.flags.DEFINE_integer('batch_size', 256, "Network batch size during training")
-tf.app.flags.DEFINE_integer('max_iters', 40000, "Max iteration")
-tf.app.flags.DEFINE_integer('step_size', 30000, "Step size for reducing the learning rate, currently only support one step")
+tf.app.flags.DEFINE_integer('max_iters', 100000, "Max iteration")
+tf.app.flags.DEFINE_integer('step_size', 100000, "Step size for reducing the learning rate, currently only support one step")
 tf.app.flags.DEFINE_integer('display', 10, "Iteration intervals for showing the loss during training, on command line interface")
 
 tf.app.flags.DEFINE_string('initializer', "truncated", "Network initialization parameters")
@@ -41,7 +41,7 @@ tf.app.flags.DEFINE_boolean('use_all_gt', True, "Whether to use all ground truth
 tf.app.flags.DEFINE_integer('max_size', 1000, "Max pixel size of the longest side of a scaled input image")
 tf.app.flags.DEFINE_integer('test_max_size', 1000, "Max pixel size of the longest side of a scaled input image")
 tf.app.flags.DEFINE_integer('ims_per_batch', 1, "Images to use per minibatch")
-tf.app.flags.DEFINE_integer('snapshot_iterations', 5000, "Iteration to take snapshot")
+tf.app.flags.DEFINE_integer('snapshot_iterations', 10000, "Iteration to take snapshot")
 
 FLAGS2["scales"] = (600,)
 FLAGS2["test_scales"] = (600,)
